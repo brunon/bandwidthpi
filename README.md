@@ -36,5 +36,5 @@ Likewise, the `--fake` argument will skip the comparatively slow SpeedTest.net t
 
 The result looks like this:
 
-    ![Display Screenshot](screenshot.png)
+![Display Screenshot](screenshot.png)
 
