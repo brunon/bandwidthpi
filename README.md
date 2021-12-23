@@ -33,3 +33,8 @@ The script also supports a `--csv` parameter to append each test result to a CSV
 For testing purposes, the `--mock` argument uses a `TkInter` GUI window to simulate what the output would look like (without needing the e-paper display being connected).
 
 Likewise, the `--fake` argument will skip the comparatively slow SpeedTest.net test and output some random values, this is useful in testing.
+
+The result looks like this:
+
+    ![Display Screenshot](screenshot.png)
+
