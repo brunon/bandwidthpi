@@ -12,13 +12,9 @@ import logging
 from collections import namedtuple
 from contextlib import contextmanager
 
-import arrow
-import speedtest
 from tenacity import retry, stop_after_attempt
-from PIL import Image, ImageFont, ImageDraw
-from inky import InkyWHAT, InkyMockWHAT
-from font_source_sans_pro import SourceSansProBold, SourceSansPro
-
+import speedtest
+import arrow
 
 # Some constants
 TIME_FORMAT = "%b %d %Y @ %H:%M:%S"
@@ -34,6 +30,7 @@ parser = argparse.ArgumentParser()
 display_group = parser.add_mutually_exclusive_group()
 display_group.add_argument('--mock', dest='mock', action='store_true', help="Use Tk mock instead of real Inky wHAT display")
 display_group.add_argument('--headless', dest='headless', action='store_true', help="Run headless (no display)")
+parser.add_argument('--no-test', dest='no_test', action='store_true', help="Skip the test, only update the display")
 parser.add_argument('--fake', dest='fake', action='store_true', help="Fake SpeedTest call (for testing)")
 parser.add_argument('--history', dest='history', required=True, help="History JSON file path")
 parser.add_argument('--csv', dest='csv', help="History CSV to append to")
@@ -82,6 +79,10 @@ def run_speedtest():
 
 
 def display_results(history, speedtest_data):
+    from PIL import Image, ImageFont, ImageDraw
+    from inky import InkyWHAT, InkyMockWHAT
+    from font_source_sans_pro import SourceSansProBold, SourceSansPro
+
     image = Image.new('1', (InkyWHAT.WIDTH, InkyWHAT.HEIGHT), 0)
     draw = ImageDraw.Draw(image)
 
@@ -102,7 +103,7 @@ def display_results(history, speedtest_data):
     # Download Speed
     draw.text((120, 53), "Download:", font=font, fill=255)
     draw.text((120, 72), ('{:5.2f}'.format(speedtest_data['download']/1e6,2)), font=font2, fill=255)
-    draw.text((195, 85), 'Mbps', font=font3, fill=255)
+    draw.text((205, 85), 'Mbps', font=font3, fill=255)
     # Upload Speed
     draw.text((260, 53), "Upload:", font=font, fill=255)
     draw.text((260, 72), ('{:4.2f}'.format(speedtest_data['upload']/1e6,2)), font=font2, fill=255)
@@ -162,27 +163,28 @@ if __name__ == '__main__':
         history = []
         logger.info('History file does not exist, creating a new one')
 
-    # Perform SpeedTest
-    speedtest_data = run_speedtest()
-    logger.info('SpeedTest data: %s', speedtest_data)
+    if not args.no_test:
+        # Perform SpeedTest
+        speedtest_data = run_speedtest()
+        logger.info('SpeedTest data: %s', speedtest_data)
 
-    # Write new entry into historical speed test file
-    history.append(speedtest_data)
-    history = history[-HISTORY_MAX_LENGTH:] # only save most recent 120 entries
-    with open(history_file, 'w') as fp:
-        json.dump(history, fp, indent=2)
+        # Write new entry into historical speed test file
+        history.append(speedtest_data)
+        history = history[-HISTORY_MAX_LENGTH:] # only save most recent 120 entries
+        with open(history_file, 'w') as fp:
+            json.dump(history, fp, indent=2)
 
-    if args.csv:
-        try:
-            with open(args.csv, 'a') as f:
-                writer = csv.writer(f)
-                writer.writerow(speedtest_data.values())
-        except Exception as e:
-            logger.exception('Error writing to CSV @ %s', args.csv, e)
+        if args.csv:
+            try:
+                with open(args.csv, 'a') as f:
+                    writer = csv.writer(f)
+                    writer.writerow(speedtest_data.values())
+            except Exception as e:
+                logger.exception('Error writing to CSV @ %s', args.csv, e)
 
     # Display results on e-paper display
     if not args.headless:
-        display_results(history, speedtest_data)
+        display_results(history, history[-1])
 
     logger.info('Process complete!')
 
