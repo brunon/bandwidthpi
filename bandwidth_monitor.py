@@ -11,6 +11,7 @@ import argparse
 import logging
 from collections import namedtuple
 from contextlib import contextmanager
+from pathlib import Path
 
 from tenacity import retry, stop_after_attempt
 import speedtest
@@ -35,6 +36,7 @@ parser.add_argument('--fake', dest='fake', action='store_true', help="Fake Speed
 parser.add_argument('--history', dest='history', required=True, help="History JSON file path")
 parser.add_argument('--csv', dest='csv', help="History CSV to append to")
 parser.add_argument('--delay', dest='delay', type=int, help="How long (in seconds) to keep mock window open")
+parser.add_argument('--image', dest='image', type=Path, help="Optional path to save generated image to disk")
 args = parser.parse_args()
 
 
@@ -140,6 +142,10 @@ def display_results(history, speedtest_data):
 
     # Upload Speed Chart
     _display_chart([h['upload'] for h in history], 5, 260, 390, 70, 'U')
+
+    if args.image:
+        with open(args.image, 'wb') as fp:
+            image.save(fp)
 
     # Display image on e-paper display
     inky = InkyMockWHAT('black') if args.mock else InkyWHAT('black')
